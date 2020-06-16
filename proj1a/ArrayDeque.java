@@ -1,162 +1,239 @@
-public class ArrayDeque<T>{
+/**
+ * ArrayDeque
+ * implemented in circular way
+ * @author zangsy
+ */
 
-        private int size;
-        private T[] items;
-        private int nextFirst;
-        private int nextLast;
+public class ArrayDeque<T> {
 
-        /**
-         * Create an empty list
-         */
-        /*
-        create an empty array deque.
-         */
-        public ArrayDeque(){
-                items = (T[]) new Object[8];
-                size = 0;
-                nextFirst = 0;
-                nextLast = 1;
+    private T[] items;
+    private int nextFirst;
+    private int nextLast;
+    private int size;
+
+    /**
+     * Create an empty ArrayDeque.
+     */
+    public ArrayDeque() {
+        // Java does not allow to create new generic array directly. So need cast.
+        items = (T[]) new Object[8];
+        nextFirst = 0;
+        nextLast = 1;
+        size = 0;
+    }
+
+    /**
+     * Return true if deque is full, false otherwise.
+     */
+    private boolean isFull() {
+        return size == items.length;
+    }
+
+    /**
+     * Whether to downsize the deque.
+     */
+    private boolean isSparse() {
+        return items.length >= 16 && size < (items.length / 4);
+    }
+
+    /**
+     * Add one circularly.
+     */
+    private int plusOne(int index) {
+        return (index + 1) % items.length;
+    }
+
+    /**
+     * Minus one circularly.
+     */
+    private int minusOne(int index) {
+        // unlike Python, in Java, the % symbol represents "remainder" rather than "modulus",
+        // therefore, it may give negative value, so + items.length is necessary,
+        // or to use Math.floorMod(x, y)
+        return (index - 1 + items.length) % items.length;
+    }
+
+    /**
+     * Resize the deque.
+     */
+    private void resize(int capacity) {
+        T[] newDeque = (T[]) new Object[capacity];
+        int oldIndex = plusOne(nextFirst); // the index of the first item in original deque
+        for (int newIndex = 0; newIndex < size; newIndex++) {
+            newDeque[newIndex] = items[oldIndex];
+            oldIndex = plusOne(oldIndex);
         }
+        items = newDeque;
+        nextFirst = capacity - 1; // since the new deque is starting from true 0 index.
+        nextLast = size;
 
-        /*
-        Returns size of the deque.
-         */
-        public int size(){
-                return size;
+    }
+
+    /**
+     * Upsize the deque.
+     */
+    private void upSize() {
+        resize(size * 2);
+    }
+
+    /**
+     * Downsize the deque
+     */
+    private void downSize() {
+        resize(items.length / 2);
+    }
+
+    /**
+     * Return true if deque is empty, false otherwise.
+     */
+    public boolean isEmpty() {
+        return size == 0;
+    }
+
+    /**
+     * Return the number of items in the deque.
+     */
+    public int size() {
+        return size;
+    }
+
+    /**
+     * Print the items in the deque from first to last, separated by a space.
+     * Once all the items have been printed, print out a new line.
+     */
+    public void printDeque() {
+        for (int i = plusOne(nextFirst); i != nextLast; i = plusOne(i)) {
+            System.out.print(items[i] + " ");
         }
+        System.out.println();
+    }
 
-        /*
-        Returns true if deque is empty,false otherwise.
-         */
-        public boolean isEmpty(){
-                return size == 0;
+    /**
+     * Add an item of type Item to the front of the deque.
+     */
+    public void addFirst(T x) {
+        if (isFull()) {
+            upSize();
         }
+        items[nextFirst] = x;
+        nextFirst = minusOne(nextFirst);
+        size += 1;
+    }
 
-        /*
-        Returns true if deque is full,false otherwise.
-         */
-        private boolean isFull(){
-                return size == items.length;
+    /**
+     * Add an item of type Item to the back of deque.
+     */
+    public void addLast(T x) {
+        if (isFull()) {
+            upSize();
         }
+        items[nextLast] = x;
+        nextLast = plusOne(nextLast);
+        size += 1;
+    }
 
-        /*
-        to define if the deque need to be cut.
-         */
-        private  boolean isSpare(){
-                return items.length >= 16 && size < (items.length / 4);
+    /**
+     * Remove and return the item at the front of the deque.
+     * If no such item exist, return null.
+     */
+    public T removeFirst() {
+        if (isSparse()) {
+            downSize();
         }
-
-        /*
-        resize the deque
-         */
-        private void resize(int capacity){
-                T[] a = (T[]) new Object[capacity];
-                System.arraycopy(items,0, a,0, size);
-                items = a;
+        nextFirst = plusOne(nextFirst);
+        T toRemove = items[nextFirst];
+        items[nextFirst] = null;
+        if (!isEmpty()) {
+            size -= 1;
         }
+        return toRemove;
+    }
 
-        /*
-        find the next position.
-         */
-        private int addOne(int a){
-                return ((a+1)%items.length);
+    /**
+     * Remove and return the item at the back oc the deque.
+     * If no such item exist, return null.
+     */
+    public T removeLast() {
+        if (isSparse()) {
+            downSize();
         }
-
-        /*
-        find the previous position.
-         */
-        private int minusOne(int a){
-                return ((a-1+items.length)%items.length);
+        nextLast = minusOne(nextLast);
+        T toRemove = items[nextLast];
+        items[nextLast] = null;
+        if (!isEmpty()) {
+            size -= 1;
         }
+        return toRemove;
+    }
 
-        /*
-        adds an item of type T to the back of the deque.
-         */
-        public void addLast(T x){
-                if (isFull()){
-                        resize(size * 2);
-                }
-                items[nextLast] = x;
-                size += 1;
-                nextLast = addOne(nextLast);
+    /**
+     * Get the item at the given index, where 0 is the front,
+     * 1 is the next item, and so forth. If no such item exists,
+     * returns null. Must not alter the deque.
+     */
+    public T get(int index) {
+        if (index >= size) {
+            return null;
         }
+        int start = plusOne(nextFirst);
+        return items[(start + index) % items.length];
+    }
 
-        /*
-        adds an item of type T to the front of the deque
-         */
-        public void addFirst(T x){
-                if (isFull()){
-                        resize(size * 2);
-                }
-                items[nextFirst] = x;
-                size += 1;
-                nextFirst = minusOne(nextFirst);
-        }
+    /**
+     * Create a deep copy of other.
+     */
+    public ArrayDeque(ArrayDeque other) {
+        items = (T[]) new Object[other.size];
+        nextFirst = other.nextFirst;
+        nextLast = other.nextLast;
+        size = other.size;
 
-        /*
-        removes and returns the item at the front of the deque
-         */
-        public T removeFirst(){
-                if (isEmpty()){
-                        return null;
-                }
-                nextFirst = addOne(nextFirst);
-                T toRemove = items[nextFirst];
-                items[nextFirst] = null;
-                size -= 1;
-                if (isSpare()){
-                        resize(items.length / 2);
-                }
-                return toRemove;
-        }
+        System.arraycopy(other.items, 0, items, 0, other.size);
+    }
 
-        /*
-        removes and returns the item at the back of the deque
-         */
-        public T removeLast(){
-                if (isEmpty()){
-                        return null;
-                }
-                nextLast = minusOne(nextLast);
-                T toRemove = items[nextLast];
-                items[nextLast] = null;
-                size -= 1;
-                if (isSpare()){
-                        resize(items.length / 2);
-                }
-                return toRemove;
-        }
 
-        /*
-        get the item at the given index
-         */
-        public T get(int index){
-                if (index >= size){
-                        return null;
-                }
-                int start = addOne(nextFirst);
-                return items[(start + index) % items.length];
-        }
 
-        /*
-        print the items in the deque from first to last
-         */
-        public void printDeque(){
-                for(int i = addOne(nextFirst); i != nextLast; i = addOne(i)){
-                      System.out.print(items[i] + " ");
-                }
-                System.out.println();
-        }
 
-        /*
-        deep copy an array from other
-         */
-        public ArrayDeque(ArrayDeque other){
-                items = (T[]) new Object[other.size];
-                nextFirst = other.nextFirst;
-                nextLast = other.nextLast;
-                size = other.size;
 
-                System.arraycopy(other.items, 0, items, 0, other.size);
-        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
